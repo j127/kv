@@ -9,7 +9,8 @@ defmodule KV.BucketTest do
     %{bucket: bucket}
   end
 
-  test "stores values by key" do
+  # pattern match the test context out of the setup info
+  test "stores values by key", %{bucket: bucket} do
     assert KV.Bucket.get(bucket, "milk") == nil
 
     KV.Bucket.put(bucket, "milk", 3)
