@@ -14,7 +14,7 @@ There are two main ways to share state in Elixir:
 
 ## `Agent`
 
-An agent is a process that can store state.
+An agent is a process that can store state. It has a client-server structure (see below).
 
 ## Todo List Example
 
@@ -97,6 +97,19 @@ defmodule KV.Bucket do
   def put(bucket, key, value) do
     Agent.update(bucket, &Map.put(&1, key, value))
   end
+
+  @doc """
+  Delete `key` from `bucket`
+
+  Return the current value of `key`, if it exists
+
+  The `&Map.pop/2` function there can be replaced with any function. The
+  function runs on the "server" part of the Agent, so it's blocking (see
+  below).
+  """
+  def delete(bucket, key) do
+    Agent.get_and_update(bucket, &Map.pop(&1, key))
+  end
 end
 ```
 
@@ -121,5 +134,41 @@ defmodule KV.BucketTest do
     KV.Bucket.put(bucket, "milk", 3)
     assert KV.Bucket.get(bucket, "milk") == 3
   end
+
+  test "deletes a value by key, if it exists", %{bucket: bucket} do
+    # bucket is empty
+    assert KV.Bucket.get(bucket, "mochi") == nil
+    assert KV.Bucket.get(bucket, "daikon") == nil
+
+    # put stuff in bucket
+    KV.Bucket.put(bucket, "mochi", 2)
+    KV.Bucket.put(bucket, "daikon", 1)
+
+    # stuff should be in bucket
+    assert KV.Bucket.get(bucket, "mochi") == 2
+    assert KV.Bucket.get(bucket, "daikon") == 1
+
+    # delete from bucket
+    deleted_val = KV.Bucket.delete(bucket, "mochi")
+    assert deleted_val == 2
+
+    # make sure it was deleted
+    assert KV.Bucket.get(bucket, "mochi") == nil
+  end
+end
+```
+
+Here is an example of the client server structure from the docs. The function in the second argument of `Agent.get_and_update/2` takes place on the Agent "server".
+
+```elixir
+def delete(bucket, key) do
+  # If you sleep here, it puts the client to sleep
+  Process.sleep(1000)
+
+  Agent.get_and_update(bucket, fn dict ->
+    # If you sleep here, it puts the server to sleep (blocking in that process)
+    Process.sleep(1000)
+    Map.pop(dict, key)
+  end)
 end
 ```
