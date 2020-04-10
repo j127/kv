@@ -16,7 +16,7 @@ There are two main ways to share state in Elixir:
 
 An agent is a process that can store state. It has a client-server structure (see below).
 
-## Todo List Example
+### Todo List Example
 
 Start an agent with a linked list:
 
@@ -172,3 +172,5 @@ def delete(bucket, key) do
   end)
 end
 ```
+
+You can create Agent processes with atoms (`Agent.start_link(fn -> %{} end, name: :todos)`), but atoms are never garbage collected, so it isn't a good idea. Users could dynmaically inject atoms into the system, using up all the memory.
